@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>sevEpiz — маркетплейс</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0b0d14;--card:#151823;--text:#f1f1f1;--accent:#2f6bff;--muted:#9aa0b4;
+}
+*{box-sizing:border-box;font-family:Inter,Arial}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column}
+header{flex:0 0 auto;height:64px;background:linear-gradient(90deg,#121528,#1b2040);display:flex;align-items:center;padding:0 24px;gap:16px}
+.logo{font-size:22px;font-weight:800;color:#ffd400}
+.search{flex:1}
+.search input{width:100%;padding:10px 14px;border-radius:12px;border:none;background:#0f1325;color:#fff}
+.user{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px}
+main{flex:1;display:grid;grid-template-columns:280px 1fr;overflow:hidden}
+aside{background:#0f1325;padding:18px;overflow-y:auto}
+section{padding:24px;overflow-y:auto}
+.category{padding:10px 12px;border-radius:10px;cursor:pointer;margin-bottom:6px}
+.category.active,.category:hover{background:#1e254a}
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.card{background:var(--card);border-radius:18px;padding:14px;display:flex;flex-direction:column;transition:.25s}
+.card:hover{transform:translateY(-6px)}
+.card img{width:100%;height:180px;object-fit:cover;border-radius:14px}
+.card h3{margin:10px 0 6px;font-size:16px}
+.price{color:#6ea0ff;font-weight:700;margin-bottom:8px}
+.card button{margin-top:auto;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+.toast{position:fixed;right:24px;bottom:24px;background:#1e254a;padding:14px 18px;border-radius:14px;animation:fade .4s}
+@keyframes fade{from{opacity:0;transform:translateY(20px)}to{opacity:1}}
+.auth{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center}
+.authBox{background:var(--card);padding:28px;border-radius:20px;width:360px;text-align:center}
+.authBox button{margin-top:16px;width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">sevEpiz</div>
+  <div class="search"><input id="search" placeholder="Поиск товаров"></div>
+  <div class="user" id="userBox">Гость</div>
+</header>
+<main>
+<aside>
+<h3>Категории</h3>
+<div class="category active">Все товары</div>
+<div class="category">Блоки</div>
+<div class="category">Инструменты</div>
+<div class="category">Ресурсы</div>
+<hr>
+<h3>Стартовые блоки</h3>
+<p>Земля (1 стак) — <b>2 AR</b></p>
+<p>Камень (1 стак) — <b>2 AR</b></p>
+</aside>
+<section>
+<div class="catalog" id="catalog"></div>
+</section>
+</main>
+
+<div class="auth" id="auth">
+ <div class="authBox">
+  <h2>Вход через Telegram</h2>
+  <p>Для покупок требуется авторизация</p>
+  <button id="tgLoginBtn">Войти</button>
+ </div>
+</div>
+
+<script>
+'use strict';
+
+// ================= Safe Telegram Init =================
+let tg = null;
+let user = null;
+
+function getTelegram(){
+  if (window.Telegram && window.Telegram.WebApp) {
+    return window.Telegram.WebApp;
+  }
+  return null;
+}
+
+function loginTG(){
+  tg = getTelegram();
+  if (!tg) {
+    alert('Открой сайт через Telegram');
+    return;
+  }
+  tg.ready();
+  user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (!user) {
+    alert('Не удалось получить данные Telegram');
+    return;
+  }
+  document.getElementById('userBox').innerText = '@' + user.username;
+  document.getElementById('auth').style.display = 'none';
+  toast('Вы вошли как @' + user.username);
+}
+
+// ================= MOCK DATA =================
+const products = [
+ {id:1,name:'Земля',price:2,img:'https://i.imgur.com/Vz7e9Ff.png'},
+ {id:2,name:'Камень',price:2,img:'https://i.imgur.com/2yaf2wb.png'}
+];
+
+const catalog = document.getElementById('catalog');
+const search = document.getElementById('search');
+
+function render(list){
+  catalog.innerHTML='';
+  list.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='card';
+    d.innerHTML=`<img src="${p.img}"><h3>${p.name}</h3><div class='price'>${p.price} AR</div><button data-name="${p.name}">Купить</button>`;
+    d.querySelector('button').onclick = () => buy(p.name);
+    catalog.appendChild(d);
+  });
+}
+
+function buy(name){
+  toast('Товар ' + name + ' добавлен в заказ');
+}
+
+function toast(t){
+  const d=document.createElement('div');
+  d.className='toast';
+  d.innerText=t;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),3000);
+}
+
+// ================= Init =================
+document.addEventListener('DOMContentLoaded', ()=>{
+  render(products);
+  search.oninput = () => render(products.filter(p=>p.name.toLowerCase().includes(search.value.toLowerCase())));
+  document.getElementById('tgLoginBtn').addEventListener('click', loginTG);
+
+  // ===== Simple runtime tests =====
+  console.assert(Array.isArray(products), 'Products should be array');
+  console.assert(typeof render === 'function', 'Render should be function');
+  console.assert(document.getElementById('catalog'), 'Catalog element exists');
+});
+</script>
+
+<!-- ================= TELEGRAM BOT (Node.js) =================
+const TelegramBot=require('node-telegram-bot-api');
+const bot=new TelegramBot('TOKEN',{polling:true});
+let orders=[];
+
+bot.onText(/\/start/,msg=>bot.sendMessage(msg.chat.id,'🛒 Добро пожаловать в sevEpiz'));
+bot.onText(/\/orders/,msg=>bot.sendMessage(msg.chat.id,JSON.stringify(orders,null,2)));
+bot.onText(/\/status (\d+) (.+)/,(msg,[,id,st])=>{
+ orders[id].status=st;
+ bot.sendMessage(msg.chat.id,'Статус обновлён');
+});
+============================================================ -->
+</body>
+</html>
