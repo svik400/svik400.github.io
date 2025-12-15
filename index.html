@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>sevEpiz — маркетплейс</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0b0d14;--card:#151823;--text:#f1f1f1;--accent:#dd9c10;--muted:#9aa0b4;
+  --success:#2ecc71;--danger:#e74c3c;--warning:#f39c12;
+}
+*{box-sizing:border-box;font-family:Inter,'Segoe UI',Arial,sans-serif}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column}
+header{flex:0 0 auto;height:64px;background:linear-gradient(90deg,#121528,#1b2040);display:flex;align-items:center;padding:0 24px;gap:16px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.logo{font-size:22px;font-weight:800;color:#b86507;display:flex;align-items:center;gap:8px}
+.logo::before{content:"™"}
+.search{flex:1;max-width:600px}
+.search input{width:100%;padding:12px 16px;border-radius:12px;border:none;background:#0f1325;color:#fff;font-size:14px;border:1px solid rgba(255,255,255,0.1);transition:border .3s}
+.search input:focus{outline:none;border-color:var(--accent)}
+.user{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:14px}
+.user .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#013487);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;border:2px solid rgba(5, 82, 69, 0.318)}
+.user .user-info{display:flex;flex-direction:column;align-items:flex-end}
+.user .username{font-weight:600}
+.user .role{font-size:12px;color:var(--muted)}
+.user .logout-btn{background:rgba(17, 4, 158, 0.1);border:1px solid var(--muted);color:var(--text);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .3s}
+.user .logout-btn:hover{background:rgba(1, 38, 160, 0.2)}
+main{flex:1;display:grid;grid-template-columns:280px 1fr;overflow:hidden}
+aside{background:#0f1325;padding:20px;overflow-y:auto;border-right:1px solid rgba(255,255,255,0.05)}
+aside h3{color:var(--accent);margin:20px 0 12px;font-size:16px}
+.category{padding:12px 16px;border-radius:12px;cursor:pointer;margin-bottom:8px;transition:all .3s;border:1px solid transparent}
+.category.active,.category:hover{background:#1e254a;border-color:var(--accent);transform:translateX(5px)}
+.starter-blocks{background:rgba(47,107,255,0.1);padding:15px;border-radius:12px;margin-top:20px;border:1px solid rgba(47,107,255,0.3)}
+.starter-blocks p{margin:8px 0;font-size:14px}
+section{padding:28px;overflow-y:auto}
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+.card{background:var(--card);border-radius:20px;padding:18px;display:flex;flex-direction:column;transition:.3s;border:1px solid rgba(255,255,255,0.05);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),#b8850e)}
+.card:hover{transform:translateY(-8px);box-shadow:0 10px 30px rgba(0,0,0,0.3);border-color:var(--accent)}
+.card img{width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:15px}
+.card h3{margin:0 0 8px;font-size:18px;font-weight:600}
+.card .description{color:var(--muted);font-size:14px;margin-bottom:15px;flex-grow:1}
+.price{color:#b86507;font-weight:800;font-size:20px;margin-bottom:15px}
+.card button{margin-top:auto;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),#b8850e);color:#fff;cursor:pointer;font-weight:600;font-size:15px;transition:all .3s}
+.card button:hover{transform:scale(1.02);box-shadow:0 5px 15px rgba(47,107,255,0.4)}
+.card button:disabled{background:#555;cursor:not-allowed;transform:none}
+.toast{position:fixed;right:24px;bottom:24px;background:linear-gradient(135deg,#1e254a,#2a2f55);padding:16px 20px;border-radius:14px;animation:fade .4s;z-index:1000;box-shadow:0 8px 25px rgba(0,0,0,0.5);border-left:4px solid var(--accent);max-width:350px}
+@keyframes fade{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.auth{position:fixed;inset:0;background:rgba(11,13,20,0.95);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(10px)}
+.authBox{background:linear-gradient(145deg,#151823,#121528);padding:40px;border-radius:24px;width:420px;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);position:relative;overflow:hidden}
+.authBox::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,#ffd400,var(--accent))}
+.authBox h2{margin:0 0 10px;font-size:28px;background:linear-gradient(90deg,#ffd400,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.authBox p{color:var(--muted);margin-bottom:30px;line-height:1.5}
+.authBox .tg-btn{background:linear-gradient(135deg,var(--accent),#b8850e);border:none;color:white;padding:16px;border-radius:12px;width:100%;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;transition:all .3s;margin-bottom:15px}
+.authBox .tg-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(47,107,255,0.4)}
+.authBox .tg-btn::before{content:"✈️";font-size:20px}
+.authBox .guest-btn{background:transparent;border:2px solid var(--muted);color:var(--muted);padding:14px;border-radius:12px;width:100%;font-size:15px;cursor:pointer;transition:all .3s}
+.authBox .guest-btn:hover{background:rgba(255,255,255,0.05);border-color:var(--accent);color:var(--text)}
+.cart-btn{position:fixed;right:28px;bottom:100px;background:linear-gradient(135deg,var(--accent),#b8850e);color:white;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 20px rgba(47,107,255,0.5);font-size:26px;z-index:999;transition:all .3s}
+.cart-btn:hover{transform:scale(1.1);box-shadow:0 8px 25px rgba(47,107,255,0.6)}
+.cart-count{position:absolute;top:-5px;right:-5px;background:var(--danger);color:white;font-size:13px;min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid var(--bg)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:1001;padding:20px;backdrop-filter:blur(5px)}
+.modal-content{background:linear-gradient(145deg,#151823,#121528);padding:32px;border-radius:24px;width:500px;max-width:90%;max-height:85vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 50px rgba(0,0,0,0.6)}
+.modal-content h2{color:var(--text);margin-top:0;margin-bottom:25px;font-size:24px;display:flex;align-items:center;gap:10px}
+.modal-content h2::before{content:"🛒"}
+.order-item{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.1);transition:background .3s}
+.order-item:hover{background:rgba(255,255,255,0.03)}
+.order-item:last-child{border-bottom:none}
+.order-total{font-size:22px;font-weight:800;margin-top:25px;text-align:right;color:#b86507}
+.checkout-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--success),#27ae60);color:white;border:none;border-radius:12px;margin-top:25px;cursor:pointer;font-weight:bold;font-size:16px;transition:all .3s}
+.checkout-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(46,204,113,0.4)}
+.checkout-btn:disabled{background:#555;cursor:not-allowed;transform:none}
+.loading{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:var(--accent);animation:spin 1s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.telegram-login-form{background:rgba(47,107,255,0.1);padding:20px;border-radius:12px;margin-top:20px;border:1px solid rgba(47,107,255,0.3)}
+.telegram-login-form input{padding:12px;border-radius:8px;border:1px solid var(--muted);background:rgba(255,255,255,0.05);color:white;margin:8px 0;width:100%}
+.telegram-login-form button{width:100%;padding:12px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;margin-top:10px}
+.telegram-login-form .divider{margin:15px 0;text-align:center;color:var(--muted);position:relative}
+.telegram-login-form .divider::before{content:"";position:absolute;left:0;top:50%;width:45%;height:1px;background:var(--muted)}
+.telegram-login-form .divider::after{content:"";position:absolute;right:0;top:50%;width:45%;height:1px;background:var(--muted)}
+.tg-auth-options{display:flex;gap:10px;margin-top:20px}
+.tg-auth-options button{flex:1;padding:12px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
+.tg-auth-options .tg-webapp-btn{background:#2f6bff;color:white}
+.tg-auth-options .tg-browser-btn{background:#34a4f4;color:white}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">sevEpiz</div>
+  <div class="search"><input id="search" placeholder="🔍 Поиск товаров..."></div>
+  <div class="user" id="userBox">
+    <div class="avatar" id="userAvatar">?</div>
+    <div class="user-info">
+      <span class="username" id="userName">Загрузка...</span>
+      <span class="role" id="userRole">Определение способа входа</span>
+    </div>
+    <button class="logout-btn" id="logoutBtn" style="display:none">Выйти</button>
+  </div>
+</header>
+
+<main>
+<aside>
+<h3>📂 Категории</h3>
+<div class="category active" data-category="all">Все товары</div>
+<div class="category" data-category="blocks">🧱 Блоки</div>
+<div class="category" data-category="tools">🛠️ Инструменты</div>
+<div class="category" data-category="resources">💎 Ресурсы</div>
+<div class="category" data-category="armor">🧥 броня</div>
+
+<div class="starter-blocks">
+  <h3>🎁 в подарок за первую покупку</h3>
+  <p> 🎫 купон на 20% скидку
+</div>
+</aside>
+
+<section>
+<div class="catalog" id="catalog"></div>
+</section>
+</main>
+
+<div class="cart-btn" id="cartBtn">
+  🛒
+  <div class="cart-count" id="cartCount" style="display:none">0</div>
+</div>
+
+<div class="auth" id="auth" style="display:none">
+ <div class="authBox">
+  <h2>Добро пожаловать!</h2>
+  <p>Для покупок войдите через Telegram или продолжите как гость</p>
+  
+  <div id="tgAuthOptions" style="margin-bottom:20px;">
+    <div class="tg-auth-options">
+      <button class="tg-webapp-btn" onclick="openTelegramWebApp()">
+        <span style="font-size:18px">📱</span><br>В Telegram
+      </button>
+      <button class="tg-browser-btn" onclick="showTelegramLoginForm()">
+        <span style="font-size:18px">🌐</span><br>В браузере
+      </button>
+    </div>
+  </div>
+  
+  <div id="telegramLoginForm" class="telegram-login-form" style="display:none">
+    <h3 style="margin-top:0">Войти через Telegram</h3>
+    <input type="text" id="tgUsername" placeholder="Имя пользователя (без @)" value="">
+    <input type="number" id="tgUserId" placeholder="ID пользователя (опционально)" value="">
+    <input type="text" id="tgFirstName" placeholder="Имя" value="Тестовый">
+    <div class="divider">или</div>
+    <button onclick="generateRandomTelegramUser()">🧪 Создать тестового пользователя</button>
+    <button onclick="loginWithTelegram()" style="background:var(--success)">✅ Войти в Telegram аккаунт</button>
+  </div>
+  
+  <button class="guest-btn" id="guestLoginBtn">
+    👤 Продолжить как гость
+  </button>
+  
+  <p style="margin-top:20px;font-size:12px;color:var(--muted)">
+    Telegram вход дает полный доступ ко всем функциям
+  </p>
+ </div>
+</div>
+
+<div class="modal" id="cartModal" style="display:none">
+  <div class="modal-content">
+    <h2>Корзина покупок</h2>
+    <div id="cartItems">
+      <p style="text-align:center; color:var(--muted); padding:40px 0;">Корзина пуста</p>
+    </div>
+    <div class="order-total" id="cartTotal">Итого: 0 AR</div>
+    <button class="checkout-btn" id="checkoutBtn">Оформить заказ</button>
+    <button style="width:100%;padding:12px;margin-top:15px;background:transparent;border:1px solid var(--muted);color:var(--muted);border-radius:12px;cursor:pointer;font-size:14px;" onclick="closeModal('cartModal')">Продолжить покупки</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ================= КОНФИГУРАЦИЯ =================
+const CONFIG = {
+  BOT_USERNAME: 'sevepiz_official_bot',
+  BOT_TOKEN: '8120159336:AAGlcZlBe7rfZhFSqd7rH7aqIos2icykgRU',
+  API_URL: 'https://api.telegram.org/bot'
+};
+
+// ================= ДАННЫЕ ТОВАРОВ =================
+const products = [
+  {
+    id: 1,
+    name: 'Земля',
+    price: 2,
+    img: 'https://i.imgur.com/Vz7e9Ff.png',
+    category: 'blocks',
+    description: 'Базовый блок для строительства'
+  },
+  {
+    id: 2,
+    name: 'Камень',
+    price: 2,
+    img: 'https://i.imgur.com/2yaf2wb.png',
+    category: 'blocks',
+    description: 'Прочный каменный блок'
+  },
+   {
+    id: 3,
+    name: 'Железная кирка',
+    price: 5,
+    img: 'https://i.imgur.com/3jK7a9C.png',
+    category: 'tools',
+    description: 'Добывайте быстрее!'
+  },
+  {
+    id: 4,
+    name: 'Алмазная кирка',
+    price: 19,
+    img: 'https://minecraft.wiki/images/Enchanted_Diamond_Pickaxe.gif?c7aaa',
+    category: 'tools',
+    description: 'Починка, шёлковое касание, эфективность V, прочность 3'
+  },
+  {
+    id: 5,
+    name: 'Алмазный топор',
+    price: 19,
+    img: 'https://minecraft.wiki/images/Enchanted_Diamond_Axe.gif?9b71e',
+    category: 'tools',
+    description: 'Починка, шёлковое касание, эфективность V, прочность 3'
+  },
+  {
+    id: 5,
+    name: 'Алмазная лопата',
+    price: 19,
+    img: 'https://minecraft.wiki/images/Enchanted_Diamond_Shovel.gif?3981f',
+    category: 'tools',
+    description: 'Починка, шёлковое касание, эфективность V, прочность 3'
+  },  
+  {
+    id: 12,
+    name: 'дубовое дерево',
+    price: 4,
+    img: 'https://i.imgur.com/5m8v9zF.png',
+    category: 'resources',
+    description: 'Редкий и ценный ресурс'
+  }
+];
+
+// ================= ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =================
+let tg = null;
+let user = null;
+let isGuest = false;
+let cart = [];
+let currentCategory = 'all';
+let tgWebAppAvailable = false;
+
+// ================= ПРОВЕРКА TELEGRAM WEBAPP =================
+function checkTelegramWebApp() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tgWebAppAvailable = true;
+    
+    try {
+      tg.ready();
+      tg.expand();
+      
+      console.log('Telegram WebApp доступен');
+      
+      // Если пользователь уже авторизован в WebApp
+      if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        const telegramUser = tg.initDataUnsafe.user;
+        console.log('Пользователь Telegram найден:', telegramUser);
+        
+        user = {
+          id: telegramUser.id,
+          username: telegramUser.username || `user_${telegramUser.id}`,
+          firstName: telegramUser.first_name,
+          lastName: telegramUser.last_name,
+          isPremium: telegramUser.is_premium || false,
+          isTelegram: true,
+          authMethod: 'webapp'
+        };
+        
+        handleAuthSuccess(user);
+        return true;
+      }
+    } catch (error) {
+      console.error('Ошибка WebApp:', error);
+    }
+  }
+  
+  console.log('Telegram WebApp не доступен - работаем в браузере');
+  return false;
+}
+
+// ================= АВТОРИЗАЦИЯ =================
+function handleAuthSuccess(authUser) {
+  console.log('Успешная авторизация:', authUser);
+  
+  user = authUser;
+  isGuest = !authUser.isTelegram;
+  
+  // Сохраняем данные
+  saveUserData();
+  
+  // Обновляем UI
+  updateUserUI();
+  
+  // Скрываем окно авторизации
+  document.getElementById('auth').style.display = 'none';
+  
+  // Показываем приветствие
+  const welcomeMsg = authUser.isTelegram 
+    ? `Добро пожаловать, ${authUser.firstName || '@' + authUser.username}!` 
+    : 'Вы вошли как гость';
+  
+  toast(welcomeMsg, 'success');
+  
+  // Если вошли через Telegram, проверяем админа
+  if (authUser.isTelegram) {
+    checkIfAdmin(authUser.id);
+  }
+}
+
+function updateUserUI() {
+  const avatar = document.getElementById('userAvatar');
+  const nameSpan = document.getElementById('userName');
+  const roleSpan = document.getElementById('userRole');
+  const logoutBtn = document.getElementById('logoutBtn');
+  
+  // Аватар
+  if (user.firstName) {
+    avatar.textContent = user.firstName.charAt(0).toUpperCase();
+  } else if (user.username) {
+    avatar.textContent = user.username.charAt(0).toUpperCase();
+  } else {
+    avatar.textContent = 'U';
+  }
+  
+  // Цвет аватара
+  avatar.style.background = user.isTelegram 
+    ? 'linear-gradient(135deg, #2f6bff, #8a2be2)' 
+    : 'linear-gradient(135deg, #666, #999)';
+  
+  // Имя пользователя
+  if (user.username) {
+    nameSpan.textContent = `@${user.username}`;
+  } else if (user.firstName) {
+    nameSpan.textContent = user.firstName;
+  } else {
+    nameSpan.textContent = 'Пользователь';
+  }
+  
+  // Роль
+  if (user.isTelegram) {
+    roleSpan.textContent = 'Telegram';
+    roleSpan.style.color = '#2f6bff';
+  } else {
+    roleSpan.textContent = 'Гость';
+    roleSpan.style.color = 'var(--muted)';
+  }
+  
+  // Кнопка выхода
+  logoutBtn.style.display = 'block';
+  logoutBtn.textContent = user.isTelegram ? 'Выйти' : 'Сменить аккаунт';
+}
+
+// ================= ВХОД ЧЕРЕЗ TELEGRAM В БРАУЗЕРЕ =================
+function showTelegramLoginForm() {
+  document.getElementById('telegramLoginForm').style.display = 'block';
+  document.getElementById('tgAuthOptions').style.display = 'none';
+}
+
+function generateRandomTelegramUser() {
+  const randomId = Math.floor(Math.random() * 1000000) + 1000000;
+  const usernames = ['alexey', 'maria', 'ivan', 'ekaterina', 'dmitry', 'olga', 'sergey', 'anna'];
+  const names = ['Алексей', 'Мария', 'Иван', 'Екатерина', 'Дмитрий', 'Ольга', 'Сергей', 'Анна'];
+  
+  const randomIndex = Math.floor(Math.random() * usernames.length);
+  
+  document.getElementById('tgUsername').value = usernames[randomIndex];
+  document.getElementById('tgUserId').value = randomId;
+  document.getElementById('tgFirstName').value = names[randomIndex];
+  
+  toast('Тестовый пользователь создан', 'success');
+}
+
+function loginWithTelegram() {
+  const username = document.getElementById('tgUsername').value.trim();
+  const userId = document.getElementById('tgUserId').value.trim();
+  const firstName = document.getElementById('tgFirstName').value.trim();
+  
+  if (!username) {
+    toast('Введите имя пользователя', 'warning');
+    return;
+  }
+  
+  if (!firstName) {
+    toast('Введите имя', 'warning');
+    return;
+  }
+  
+  user = {
+    id: userId || `browser_${Date.now()}`,
+    username: username,
+    firstName: firstName,
+    isTelegram: true,
+    authMethod: 'browser'
+  };
+  
+  handleAuthSuccess(user);
+}
+
+// ================= ВХОД ЧЕРЕЗ TELEGRAM WEBAPP =================
+function openTelegramWebApp() {
+  if (tgWebAppAvailable && tg) {
+    // Мы уже в WebApp, проверяем авторизацию
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const telegramUser = tg.initDataUnsafe.user;
+      user = {
+        id: telegramUser.id,
+        username: telegramUser.username || `user_${telegramUser.id}`,
+        firstName: telegramUser.first_name,
+        isTelegram: true,
+        authMethod: 'webapp'
+      };
+      handleAuthSuccess(user);
+    } else {
+      // Запрашиваем авторизацию в WebApp
+      tg.showAlert('Для входа требуется авторизация через Telegram');
+    }
+  } else {
+    // Открываем ссылку на бота
+    const botUrl = `https://t.me/${CONFIG.BOT_USERNAME}?start=webapp`;
+    window.open(botUrl, '_blank');
+    toast('Откройте ссылку в Telegram', 'info');
+  }
+}
+
+// ================= ГОСТЕВОЙ ВХОД =================
+function loginAsGuest() {
+  const guestId = 'guest_' + Date.now();
+  const guestName = 'Гость_' + Math.floor(Math.random() * 1000);
+  
+  user = {
+    id: guestId,
+    username: guestName,
+    firstName: 'Гость',
+    isTelegram: false,
+    authMethod: 'guest'
+  };
+  
+  handleAuthSuccess(user);
+}
+
+function logout() {
+  user = null;
+  isGuest = false;
+  
+  document.getElementById('userName').textContent = 'Гость';
+  document.getElementById('userAvatar').textContent = '?';
+  document.getElementById('userAvatar').style.background = 'linear-gradient(135deg, #666, #999)';
+  document.getElementById('userRole').textContent = 'Не авторизован';
+  document.getElementById('logoutBtn').style.display = 'none';
+  
+  // Показываем окно авторизации
+  showAuthScreen();
+  
+  // Очищаем сохраненные данные
+  localStorage.removeItem('sevEpiz_auth');
+  localStorage.removeItem('sevEpiz_user');
+  
+  toast('Вы вышли из системы');
+}
+
+function showAuthScreen() {
+  document.getElementById('auth').style.display = 'flex';
+  document.getElementById('telegramLoginForm').style.display = 'none';
+  document.getElementById('tgAuthOptions').style.display = 'block';
+}
+
+// ================= ПРОВЕРКА АДМИНА =================
+function checkIfAdmin(userId) {
+  // Здесь можно добавить проверку по ID админа
+  const adminIds = ['6084116716']; // Замените на ваш ID
+  
+  if (adminIds.includes(String(userId))) {
+    console.log('Пользователь является администратором');
+    // Можно добавить админ-панель
+  }
+}
+
+// ================= КОРЗИНА =================
+function addToCart(product) {
+  if (!user) {
+    toast('Для покупок необходимо войти в систему', 'warning');
+    showAuthScreen();
+    return;
+  }
+  
+  const existingItem = cart.find(item => item.id === product.id);
+  
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    cart.push({
+      ...product,
+      quantity: 1,
+      addedAt: new Date().toISOString()
+    });
+  }
+  
+  updateCartUI();
+  saveCart();
+  toast(`${product.name} добавлен в корзину`, 'success');
+}
+
+function updateCartUI() {
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = document.getElementById('cartCount');
+  const cartItems = document.getElementById('cartItems');
+  const cartTotal = document.getElementById('cartTotal');
+  const checkoutBtn = document.getElementById('checkoutBtn');
+  
+  if (totalCount > 0) {
+    cartCount.textContent = totalCount > 99 ? '99+' : totalCount;
+    cartCount.style.display = 'flex';
+  } else {
+    cartCount.style.display = 'none';
+  }
+  
+  cartItems.innerHTML = '';
+  
+  if (cart.length === 0) {
+    cartItems.innerHTML = '<p style="text-align:center; color:var(--muted); padding:40px 0;">Корзина пуста</p>';
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerHTML = 'Корзина пуста';
+    cartTotal.textContent = 'Итого: 0 AR';
+    return;
+  }
+  
+  let totalPrice = 0;
+  
+  cart.forEach((item) => {
+    const itemTotal = item.price * item.quantity;
+    totalPrice += itemTotal;
+    
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'order-item';
+    itemDiv.innerHTML = `
+      <div style="flex:1;">
+        <strong>${item.name}</strong>
+        <div style="font-size:14px; margin-top:4px;">${item.price} AR × ${item.quantity}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <strong style="color:#6ea0ff; font-size:18px;">${itemTotal} AR</strong>
+        <button onclick="removeFromCart(${item.id})" style="background:var(--danger); color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px;">Удалить</button>
+      </div>
+    `;
+    cartItems.appendChild(itemDiv);
+  });
+  
+  cartTotal.textContent = `Итого: ${totalPrice} AR`;
+  checkoutBtn.disabled = false;
+  checkoutBtn.innerHTML = `Оформить заказ (${totalPrice} AR)`;
+}
+
+function removeFromCart(productId) {
+  cart = cart.filter(item => item.id !== productId);
+  updateCartUI();
+  saveCart();
+  toast('Товар удален из корзины');
+}
+
+async function checkout() {
+  if (cart.length === 0) {
+    toast('Корзина пуста', 'warning');
+    return;
+  }
+  
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const orderId = Date.now();
+  
+  const orderData = {
+    id: orderId,
+    userId: user.id,
+    username: user.username || user.firstName,
+    items: cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    })),
+    total: totalPrice,
+    date: new Date().toISOString(),
+    status: 'pending'
+  };
+  
+  // Отправка заказа в Telegram бот (если настроен токен)
+  if (CONFIG.BOT_TOKEN && CONFIG.BOT_TOKEN !== 'ВАШ_BOT_TOKEN' && user.isTelegram) {
+    await sendOrderToTelegramBot(orderData);
+  }
+  
+  toast('Заказ успешно оформлен!', 'success');
+  cart = [];
+  updateCartUI();
+  saveCart();
+  closeModal('cartModal');
+}
+
+// ================= ОТПРАВКА В TELEGRAM БОТ =================
+async function sendOrderToTelegramBot(orderData) {
+  try {
+    const message = `
+🎯 Новый заказ #${orderData.id}
+
+👤 Пользователь: ${orderData.username}
+🆔 ID: ${orderData.userId}
+📅 Дата: ${new Date(orderData.date).toLocaleString('ru-RU')}
+
+🛒 Товары:
+${orderData.items.map(item => `• ${item.name} × ${item.quantity} = ${item.price * item.quantity} AR`).join('\n')}
+
+💰 Итого: ${orderData.total} AR
+    `;
+    
+    // Отправляем админу
+    await fetch(`${CONFIG.API_URL}${CONFIG.BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: '6084116716', // Замените на ID админа
+        text: message
+      })
+    });
+    
+    // Отправляем подтверждение пользователю (если есть chat_id)
+    if (user.id && !isNaN(user.id) && user.authMethod === 'webapp') {
+      await fetch(`${CONFIG.API_URL}${CONFIG.BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: user.id,
+          text: `✅ Ваш заказ #${orderData.id} оформлен!\nСумма: ${orderData.total} AR\n\nМы свяжемся с вами для уточнения деталей.`
+        })
+      });
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Ошибка отправки в Telegram:', error);
+    return false;
+  }
+}
+
+// ================= РЕНДЕРИНГ ТОВАРОВ =================
+function render(productsList) {
+  const catalog = document.getElementById('catalog');
+  catalog.innerHTML = '';
+  
+  if (productsList.length === 0) {
+    catalog.innerHTML = `
+      <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--muted);">
+        <h3>Товары не найдены</h3>
+      </div>
+    `;
+    return;
+  }
+  
+  productsList.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    
+    const buttonText = user ? 'Добавить в корзину' : 'Войдите для покупки';
+    
+    card.innerHTML = `
+      <img src="${p.img}" alt="${p.name}" loading="lazy">
+      <h3>${p.name}</h3>
+      <div class="description">${p.description}</div>
+      <div class="price">${p.price} AR</div>
+      <button data-id="${p.id}">
+        ${buttonText}
+      </button>
+    `;
+    
+    card.querySelector('button').onclick = () => addToCart(p);
+    catalog.appendChild(card);
+  });
+}
+
+function filterByCategory(category) {
+  currentCategory = category;
+  
+  document.querySelectorAll('.category').forEach(cat => {
+    cat.classList.remove('active');
+  });
+  document.querySelector(`.category[data-category="${category}"]`).classList.add('active');
+  
+  const filtered = category === 'all' 
+    ? products 
+    : products.filter(p => p.category === category);
+  
+  const searchValue = document.getElementById('search').value.toLowerCase();
+  if (searchValue) {
+    render(filtered.filter(p => 
+      p.name.toLowerCase().includes(searchValue) ||
+      p.description.toLowerCase().includes(searchValue)
+    ));
+  } else {
+    render(filtered);
+  }
+}
+
+// ================= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================
+function toast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  
+  if (type === 'success') {
+    toast.style.borderLeftColor = 'var(--success)';
+  } else if (type === 'error') {
+    toast.style.borderLeftColor = 'var(--danger)';
+  } else if (type === 'warning') {
+    toast.style.borderLeftColor = 'var(--warning)';
+  }
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'fade 0.4s reverse';
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+function saveUserData() {
+  if (user) {
+    localStorage.setItem('sevEpiz_user', JSON.stringify(user));
+    localStorage.setItem('sevEpiz_auth', JSON.stringify({
+      isAuthenticated: true,
+      isGuest: isGuest,
+      timestamp: Date.now()
+    }));
+  }
+}
+
+function saveCart() {
+  localStorage.setItem('sevEpiz_cart', JSON.stringify(cart));
+}
+
+function loadSavedData() {
+  try {
+    // Загрузка пользователя
+    const savedUser = localStorage.getItem('sevEpiz_user');
+    const savedAuth = localStorage.getItem('sevEpiz_auth');
+    
+    if (savedUser && savedAuth) {
+      const authData = JSON.parse(savedAuth);
+      if (authData.isAuthenticated && Date.now() - authData.timestamp < 30 * 24 * 60 * 60 * 1000) {
+        user = JSON.parse(savedUser);
+        isGuest = authData.isGuest;
+        updateUserUI();
+        document.getElementById('auth').style.display = 'none';
+      }
+    }
+    
+    // Загрузка корзины
+    const savedCart = localStorage.getItem('sevEpiz_cart');
+    if (savedCart) {
+      cart = JSON.parse(savedCart);
+      updateCartUI();
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки данных:', error);
+  }
+}
+
+// ================= ИНИЦИАЛИЗАЦИЯ =================
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Инициализация приложения...');
+  
+  // Проверяем Telegram WebApp
+  const isInTelegram = checkTelegramWebApp();
+  
+  // Загружаем сохраненные данные
+  loadSavedData();
+  
+  // Рендерим товары
+  render(products);
+  
+  // Если не в Telegram и не авторизованы - показываем окно входа
+  if (!isInTelegram && !user) {
+    document.getElementById('auth').style.display = 'flex';
+  }
+  
+  // Обработчики событий
+  document.getElementById('search').addEventListener('input', (e) => {
+    const searchValue = e.target.value.toLowerCase();
+    const filtered = currentCategory === 'all' 
+      ? products 
+      : products.filter(p => p.category === currentCategory);
+    
+    render(filtered.filter(p => 
+      p.name.toLowerCase().includes(searchValue) ||
+      p.description.toLowerCase().includes(searchValue)
+    ));
+  });
+  
+  document.getElementById('guestLoginBtn').addEventListener('click', loginAsGuest);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.getElementById('cartBtn').addEventListener('click', () => {
+    document.getElementById('cartModal').style.display = 'flex';
+  });
+  document.getElementById('checkoutBtn').addEventListener('click', checkout);
+  
+  // Категории
+  document.querySelectorAll('.category').forEach(cat => {
+    cat.addEventListener('click', () => {
+      filterByCategory(cat.dataset.category);
+    });
+  });
+  
+  // Закрытие модальных окон
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  });
+  
+  // Закрытие по Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal('cartModal');
+      closeModal('auth');
+    }
+  });
+  
+  console.log('Приложение готово');
+});
+</script>
+</body>
+</html>
